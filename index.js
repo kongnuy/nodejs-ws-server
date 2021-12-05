@@ -2,8 +2,8 @@ const app = require("express")();
 const http = require("http").Server(app);
 const io = require("socket.io")(http, {
   cors: {
-    origin: "http://localhost:8008",
-    methods: ["GET", "POST"],
+    origin: ["http://localhost:8008", "https://anglaisenligne.cm"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   },
 });
 const port = process.env.PORT || 8018;
