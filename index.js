@@ -1,14 +1,41 @@
+const fs = require("fs");
 const app = require("express")();
-const http = require("http").Server(app);
-const io = require("socket.io")(http, {
+const http = require("http");
+const https = require("https");
+const restClient = require("./client");
+
+const port = process.env.PORT || 80;
+const portSSL = process.env.PORT || 443;
+
+// Certificate
+const privateKey = fs.readFileSync(
+  `/etc/letsencrypt/live/socket.kongnuy.com/privkey.pem`,
+  "utf8"
+);
+const certificate = fs.readFileSync(
+  "/etc/letsencrypt/live/socket.kongnuy.com/cert.pem",
+  "utf8"
+);
+const ca = fs.readFileSync(
+  "/etc/letsencrypt/live/socket.kongnuy.com/chain.pem",
+  "utf8"
+);
+
+const credentials = {
+  key: privateKey,
+  cert: certificate,
+  ca: ca,
+};
+
+const httpServer = http.createServer(app);
+const httpsServer = https.createServer(credentials, app);
+
+const io = require("socket.io")(httpsServer, {
   cors: {
     origin: ["http://localhost:8008", "https://anglaisenligne.cm"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   },
 });
-const port = process.env.PORT || 8018;
-
-const restClient = require("./client");
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
@@ -42,14 +69,18 @@ io.on("connection", async (socket) => {
           type: message.type,
           data: message.data,
         };
-        console.log("msg ====>> ", msg);
-        console.log("send ====>> ", send);
+        console.log("msg ====> ", msg);
+        console.log("send ====> ", send);
         io.to(sendTo.connectionID).emit("message", send);
       });
     }
   }
 });
 
-http.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Socket.IO server running at http://localhost:${port}/`);
+});
+
+httpsServer.listen(portSSL, () => {
+  console.log(`Socket.IO server running at http://localhost:${portSSL}/`);
 });
